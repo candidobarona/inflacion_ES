@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPC España — Evolución de precios e inflación</title>
+<meta name="description" content="Consulta la evolución del IPC en España por categoría oficial (INE), compara categorías, crea tu cartera personalizada y compara entre comunidades autónomas.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%88%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">📈 <span>IPC España</span></div>
+    <nav class="topnav">
+      <a href="#categorias">Categorías</a>
+      <a href="#grafico">Gráfico</a>
+      <a href="#cartera">Mi cartera</a>
+      <a href="#regiones">Comunidades</a>
+    </nav>
+    <button id="themeToggle" class="btn btn-ghost" type="button" aria-label="Cambiar tema">🌙</button>
+  </div>
+</header>
+
+<main>
+
+  <section class="hero">
+    <h1>Evolución de precios del IPC en España</h1>
+    <p>Datos oficiales del INE, actualizados a <strong id="lastUpdate">—</strong>. Elige una o varias categorías para comparar su evolución, construir tu cartera y calcular tu inflación personal.</p>
+  </section>
+
+  <!-- ============ CATEGORÍAS = ÚNICO SELECTOR ============ -->
+  <section class="section" id="categorias">
+    <div class="section-head">
+      <h2>1. Elige las categorías del IPC a analizar</h2>
+      <div class="section-actions">
+        <input id="searchInput" type="search" placeholder="Filtrar…" aria-label="Filtrar categorías">
+        <button id="clearSelBtn" class="btn btn-ghost btn-sm" type="button">Vaciar selección</button>
+      </div>
+    </div>
+    <div id="categoryGrid" class="category-grid" role="listbox" aria-multiselectable="true"></div>
+  </section>
+
+  <!-- ============ PERIODO + KPIs ============ -->
+  <section class="section">
+    <div class="section-head">
+      <h2>2. Periodo</h2>
+      <div class="section-actions">
+        <div class="period-pills" id="periodPills">
+          <button data-p="12" type="button">1 año</button>
+          <button data-p="36" type="button">3 años</button>
+          <button data-p="60" type="button" class="active">5 años</button>
+          <button data-p="120" type="button">10 años</button>
+          <button data-p="all" type="button">Todo</button>
+        </div>
+      </div>
+    </div>
+    <div id="kpiCards" class="kpi-grid"></div>
+  </section>
+
+  <!-- ============ GRÁFICO ============ -->
+  <section class="section" id="grafico">
+    <div class="section-head">
+      <h2>Evolución de precios</h2>
+      <label class="toggle">
+        <input type="checkbox" id="normalizeToggle">
+        <span>Comparar en % (inicio = 100)</span>
+      </label>
+    </div>
+    <p class="note">El IPC mide la evolución del nivel de precios (un índice), no el precio de venta de un producto concreto.</p>
+    <div class="chart-wrap"><canvas id="mainChart"></canvas></div>
+    <p id="chartEmpty" class="empty-state">Elige al menos una categoría arriba para ver su evolución.</p>
+    <div class="chart-actions">
+      <button id="exportCsvBtn" class="btn btn-ghost btn-sm" type="button">⬇️ CSV</button>
+      <button id="exportImgBtn" class="btn btn-ghost btn-sm" type="button">🖼️ Imagen</button>
+      <button id="shareBtn" class="btn btn-ghost btn-sm" type="button">🔗 Compartir</button>
+    </div>
+  </section>
+
+  <!-- ============ COMPARACIÓN + RANKING ============ -->
+  <section class="section">
+    <h2>Comparativa e inflación por categoría</h2>
+    <div class="table-wrap">
+      <table id="compareTable" class="data-table">
+        <thead><tr><th>Categoría</th><th>Interanual</th><th>Periodo</th><th>Desde 2002</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ CARTERA ============ -->
+  <section class="section" id="cartera">
+    <h2>3. Mi cartera personalizada</h2>
+    <p class="note">Asigna un peso a cada categoría seleccionada. <code>Índice cesta = Σ(índice × peso) / Σ(peso)</code></p>
+    <div class="cesta-layout">
+      <div id="weightRows" class="weight-rows"></div>
+      <div class="cesta-donut"><canvas id="donutChart"></canvas></div>
+    </div>
+    <div id="cartKpis" class="kpi-grid"></div>
+    <div class="chart-wrap chart-wrap-sm"><canvas id="cestaChart"></canvas></div>
+    <div class="scenario-box">
+      <label for="expenseInput">¿Cuánto gastaba? Introduce un gasto mensual (€):</label>
+      <input type="number" id="expenseInput" min="0" step="10" placeholder="1000">
+      <strong id="scenarioResult"></strong>
+    </div>
+  </section>
+
+  <!-- ============ COMUNIDADES AUTÓNOMAS ============ -->
+  <section class="section" id="regiones">
+    <h2>4. Comparativa por comunidad autónoma</h2>
+    <p class="note">Foto del último dato mensual disponible (<span id="regionPeriod">—</span>) por comunidad autónoma. Elige una categoría para ver el ranking regional.</p>
+    <select id="regionCategorySelect"></select>
+    <div class="chart-wrap chart-wrap-tall"><canvas id="regionChart"></canvas></div>
+  </section>
+
+  <footer class="site-footer">
+    <p><strong>Fuente:</strong> INE, Índice de Precios de Consumo (IOE 30138), vía series redistribuidas por tematicas.org. No es un producto oficial del INE.</p>
+    <p><a href="README.md">README</a> · datos incluidos directamente en el código, sin llamadas de red — funciona también abriendo <code>index.html</code> localmente.</p>
+  </footer>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
