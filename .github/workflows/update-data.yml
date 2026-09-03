@@ -1,0 +1,47 @@
+name: Actualizar datos del IPC
+
+# Se ejecuta automáticamente el día 15 de cada mes a las 07:00 UTC
+# (el INE suele publicar el IPC entre el 12 y el 14 de cada mes) y
+# también puede lanzarse a mano desde la pestaña "Actions" de GitHub.
+on:
+  schedule:
+    - cron: "0 7 15 * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Consultar la API del INE y añadir periodos nuevos
+        id: fetch
+        run: |
+          python3 scripts/fetch_ine.py
+        continue-on-error: true
+
+      - name: Regenerar js/data.js si hubo cambios
+        if: steps.fetch.outcome == 'success'
+        run: python3 build.py
+
+      - name: Commitear y subir los cambios
+        if: steps.fetch.outcome == 'success'
+        run: |
+          git config user.name "ipc-data-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/raw/*.tsv js/data.js
+          git diff --cached --quiet || git commit -m "chore: actualizar datos del IPC ($(date +%Y-%m))"
+          git push
+
+      - name: Sin cambios o fallo al consultar el INE
+        if: steps.fetch.outcome != 'success'
+        run: echo "No se han añadido datos nuevos esta vez (sin cambios o la API del INE no respondió). Revisa el log del paso anterior."
